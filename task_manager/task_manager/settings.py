@@ -1,19 +1,36 @@
-# task_manager/settings.py  — Railway-ready
+# task_manager/settings.py
 import os
 from pathlib import Path
 from datetime import timedelta
 
-# ----- Base paths
+from dotenv import load_dotenv
+import dj_database_url
+
+load_dotenv()
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# ----- Core flags
+# -------------------------------------------------------------------
+# Core flags
+# -------------------------------------------------------------------
 SECRET_KEY = os.getenv("SECRET_KEY", "change-me-in-production")
 DEBUG = os.getenv("DEBUG", "False") == "True"
 
-# On Railway you'll get a *.railway.app host; allow localhost for dev
-ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "*.railway.app,localhost,127.0.0.1,[::1]").split(",")
+# Backend hosts (public *.railway.app + local + your internal host)
+ALLOWED_HOSTS = [
+    ".railway.app",
+    "academiqa.railway.internal",
+    "localhost",
+    "127.0.0.1",
+    "[::1]",
+]
 
-# ----- Installed apps
+# Optional: set this in Railway (Variables) to lock CORS/CSRF to your exact frontend
+FRONTEND_ORIGIN = os.getenv("FRONTEND_ORIGIN")  # e.g. https://your-frontend.railway.app
+
+# -------------------------------------------------------------------
+# Installed apps
+# -------------------------------------------------------------------
 INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",
@@ -31,11 +48,13 @@ INSTALLED_APPS = [
     "core.apps.CoreConfig",
 ]
 
-# ----- Middleware (WhiteNoise for static files)
+# -------------------------------------------------------------------
+# Middleware (include WhiteNoise)
+# -------------------------------------------------------------------
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
-    "whitenoise.middleware.WhiteNoiseMiddleware",  # <— add
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -46,11 +65,13 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = "task_manager.urls"
 
-# IMPORTANT: your asgi.py is at repo root (module name is 'asgi'), not task_manager.asgi
+# ASGI/WSGI
 ASGI_APPLICATION = "task_manager.asgi.application"
 WSGI_APPLICATION = "task_manager.wsgi.application"
 
-# ----- Templates
+# -------------------------------------------------------------------
+# Templates
+# -------------------------------------------------------------------
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
@@ -67,21 +88,21 @@ TEMPLATES = [
     },
 ]
 
-# ----- Database (Railway Postgres via DATABASE_URL)
-# Install dj-database-url in requirements.
-import dj_database_url
-
+# -------------------------------------------------------------------
+# Database (Railway Postgres via DATABASE_URL)
+# -------------------------------------------------------------------
 DATABASES = {
     "default": dj_database_url.config(
-        default=os.getenv("DATABASE_URL"),  # injected by Railway Postgres add-on
+        default=os.getenv("DATABASE_URL"),
         conn_max_age=600,
-        ssl_require=True,
+        ssl_require=not DEBUG,
     )
 }
 
-# ----- Channels (WebSockets) via Redis
-# Railway Redis injects REDIS_URL, e.g. redis://:pass@host:port
-REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+# -------------------------------------------------------------------
+# Channels (Redis)
+# -------------------------------------------------------------------
+REDIS_URL = os.getenv("REDIS_URL", "redis://127.0.0.1:6379/0")
 CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
@@ -89,15 +110,19 @@ CHANNEL_LAYERS = {
     }
 }
 
-# ----- Celery (optional for MVP; safe to point at same Redis)
-CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", REDIS_URL)
+# -------------------------------------------------------------------
+# Celery (broker=result via Redis; results in DB)
+# -------------------------------------------------------------------
+CELERY_BROKER_URL = REDIS_URL
 CELERY_RESULT_BACKEND = "django-db"
 CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
 CELERY_TIMEZONE = "Africa/Nairobi"
 
-# ----- REST Framework + JWT
+# -------------------------------------------------------------------
+# REST Framework + JWT
+# -------------------------------------------------------------------
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
         "rest_framework_simplejwt.authentication.JWTAuthentication",
@@ -109,31 +134,39 @@ SIMPLE_JWT = {
     "AUTH_HEADER_TYPES": ("Bearer",),
 }
 
-# ----- CORS / CSRF
-# For first deploy, keep permissive CORS. We will tighten to your frontend domain after it’s live.
-CORS_ALLOW_ALL_ORIGINS = True
-CORS_ALLOW_CREDENTIALS = True
+# -------------------------------------------------------------------
+# CORS / CSRF
+# -------------------------------------------------------------------
+CORS_ALLOW_ALL_ORIGINS = False
 
-# If you prefer explicit origins now, comment the two lines above and set:
-# CORS_ALLOWED_ORIGINS = os.getenv("CORS_ALLOWED_ORIGINS", "").split(",") if os.getenv("CORS_ALLOWED_ORIGINS") else []
+# If FRONTEND_ORIGIN is provided, lock to it; else allow any *.railway.app (regex)
+if FRONTEND_ORIGIN:
+    CORS_ALLOWED_ORIGINS = [FRONTEND_ORIGIN]
+    CORS_ALLOWED_ORIGIN_REGEXES = []
+else:
+    CORS_ALLOWED_ORIGINS = []
+    CORS_ALLOWED_ORIGIN_REGEXES = [r"^https:\/\/.*\.railway\.app$"]
 
-# CSRF: trust Railway and your custom domain (add later)
 CSRF_TRUSTED_ORIGINS = [
     "https://*.railway.app",
-    # add e.g. "https://academiqa.org", "https://www.academiqa.org" later
 ]
+if FRONTEND_ORIGIN:
+    CSRF_TRUSTED_ORIGINS.append(FRONTEND_ORIGIN)
 
-# ----- Static & Media
+# -------------------------------------------------------------------
+# Static & Media
+# -------------------------------------------------------------------
 STATIC_URL = "/static/"
 STATICFILES_DIRS = [BASE_DIR / "static"]
 STATIC_ROOT = BASE_DIR / "staticfiles"
-# WhiteNoise robust caching for production
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
-# ----- Email (unchanged; env-driven secrets)
+# -------------------------------------------------------------------
+# Email (env-driven)
+# -------------------------------------------------------------------
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 EMAIL_HOST = "smtp.gmail.com"
 EMAIL_PORT = 587
@@ -142,14 +175,20 @@ EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
 EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
-# ----- Other settings
+# -------------------------------------------------------------------
+# i18n / tz
+# -------------------------------------------------------------------
 LANGUAGE_CODE = "en-us"
 TIME_ZONE = "Africa/Nairobi"
 USE_I18N = True
 USE_TZ = True
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-# ----- Security behind Railway proxy (HTTPS headers)
-SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
-SESSION_COOKIE_SECURE = not DEBUG
-CSRF_COOKIE_SECURE = not DEBUG
+# -------------------------------------------------------------------
+# Security behind proxy (Railway)
+# -------------------------------------------------------------------
+if not DEBUG:
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
