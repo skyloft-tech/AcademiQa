@@ -1,0 +1,8 @@
+
+# root ignores
+.env
+venv/
+__pycache__/
+staticfiles/
+media/
+client/node_modules/
