@@ -1,0 +1,12 @@
+{
+  "extends": [
+    "stylelint-config-standard",
+    "stylelint-config-tailwindcss",
+    "stylelint-config-prettier-scss"
+  ],
+  "plugins": ["stylelint-scss"],
+  "rules": {
+    "font-family-no-missing-generic-family-keyword": true,
+    "no-duplicate-selectors": true
+  }
+}
