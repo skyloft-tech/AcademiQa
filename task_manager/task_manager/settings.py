@@ -45,7 +45,7 @@ INSTALLED_APPS = [
     "channels",
     "django_celery_results",
 
-    "task_manager.core.apps.CoreConfig",
+    "core.apps.CoreConfig",
 ]
 
 # -------------------------------------------------------------------
@@ -66,7 +66,7 @@ MIDDLEWARE = [
 ROOT_URLCONF = "task_manager.urls"
 
 # ASGI/WSGI
-ASGI_APPLICATION = "task_manager.task_manager.asgi.application"
+ASGI_APPLICATION = "task_manager.asgi.application"
 WSGI_APPLICATION = "task_manager.wsgi.application"
 
 # -------------------------------------------------------------------
