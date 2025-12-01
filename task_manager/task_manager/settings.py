@@ -145,10 +145,11 @@ if FRONTEND_ORIGIN:
     CORS_ALLOWED_ORIGIN_REGEXES = []
 else:
     CORS_ALLOWED_ORIGINS = []
-    CORS_ALLOWED_ORIGIN_REGEXES = [r"^https:\/\/.*\.railway\.app$"]
+    CORS_ALLOWED_ORIGIN_REGEXES = [r"^https:\/\/.*\.netlify\.app$"]
 
 CSRF_TRUSTED_ORIGINS = [
     "https://*.railway.app",
+    "https://lighthearted-torrone-cb0441.netlify.app",
 ]
 if FRONTEND_ORIGIN:
     CSRF_TRUSTED_ORIGINS.append(FRONTEND_ORIGIN)
