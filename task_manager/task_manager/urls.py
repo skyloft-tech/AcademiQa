@@ -11,7 +11,7 @@ def healthz(_request):
 urlpatterns = [
     path("healthz", healthz),           # no trailing slash
     path("healthz/", healthz),          # with trailing slash (no redirect)
-    path("", include("task_manager.core.urls")),
+    path("", include("core.urls")),
     path("admin/", admin.site.urls),
 ]
 
