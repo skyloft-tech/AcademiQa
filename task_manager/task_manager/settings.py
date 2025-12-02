@@ -137,7 +137,7 @@ SIMPLE_JWT = {
 # -------------------------------------------------------------------
 # CORS / CSRF
 # -------------------------------------------------------------------
-CORS_ALLOW_ALL_ORIGINS = False
+CORS_ALLOW_ALL_ORIGINS = True
 
 # If FRONTEND_ORIGIN is provided, lock to it; else allow any *.railway.app (regex)
 if FRONTEND_ORIGIN:
