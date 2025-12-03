@@ -24,4 +24,5 @@ WORKDIR /app/task_manager
 RUN python task_manager/manage.py collectstatic --noinput || true
 
 # AFTER (shell form; expands ${PORT}, falls back to 8000 locally)
-CMD sh -c 'daphne -b 0.0.0.0 -p ${PORT:-8000} task_manager.asgi:application'
+#CMD sh -c 'daphne -b 0.0.0.0 -p ${PORT:-8000} task_manager.asgi:application'
+CMD ["sh", "-c", "daphne -b 0.0.0.0 -p $PORT task_manager.asgi:application"]
