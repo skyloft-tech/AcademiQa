@@ -20,6 +20,7 @@ DEBUG = os.getenv("DEBUG", "False") == "True"
 ALLOWED_HOSTS = [
     ".railway.app",
     "academiqa.railway.internal",
+    "academiqa-production.up.railway.app",
     "localhost",
     "127.0.0.1",
     "[::1]",
